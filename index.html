@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="chat-container">
+      <h1>Chat Application</h1>
+      <div class="input-container">
+        <input id="username" placeholder="Username" />
+        <input id="participant" placeholder="Participant name" />
+        <button id="startChatBtn">Start Chat</button>
+      </div>
+      <div id="messages" class="messages-container"></div>
+      <form id="form" action="">
+        <input id="input" autocomplete="off" placeholder="Type a message..." />
+        <button>Send</button>
+      </form>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+
+      const usernameInput = document.getElementById("username");
+      const participantInput = document.getElementById("participant");
+      const startChatBtn = document.getElementById("startChatBtn");
+      const form = document.getElementById("form");
+      const input = document.getElementById("input");
+      const messages = document.getElementById("messages");
+
+      let username;
+      let participant;
+
+      startChatBtn.addEventListener("click", () => {
+        username = usernameInput.value;
+        participant = participantInput.value;
+
+        if (username && participant) {
+          startChat();
+        }
+      });
+
+      function startChat() {
+        const chatData = { username, participant };
+        socket.emit("start chat", chatData);
+      }
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (input.value && username) {
+          socket.emit("chat message", {
+            message: input.value,
+            sender: username,
+            participant,
+          });
+          input.value = ""; // Clear input
+        }
+      });
+
+      socket.on("chat message", ({ sender, message }) => {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "message";
+        messageDiv.textContent = `${sender}: ${message}`;
+        messages.appendChild(messageDiv);
+        window.scrollTo(0, document.body.scrollHeight); // Scroll to bottom
+      });
+      socket.on("chat history", (chatHistory) => {
+        chatHistory.forEach(({ sender, message, timestamp }) => {
+          const messageDiv = document.createElement("div");
+          messageDiv.className = "message";
+          messageDiv.textContent = `${sender}: ${message}`;
+          messages.appendChild(messageDiv);
+        });
+        window.scrollTo(0, document.body.scrollHeight);
+      });
+    </script>
+  </body>
+</html>
